@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavLink, Outlet, useLocation } from 'react-router-dom';
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   ClipboardList, 
@@ -10,9 +10,14 @@ import {
   LogOut,
   Bell
 } from 'lucide-react';
+import { auth } from '../firebase';
+import { signOut } from 'firebase/auth';
+import { useAuth } from '../context/AuthContext';
 
 export default function DashboardLayout() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { currentUser } = useAuth(); // Hook into our auth context
 
   const getPageTitle = (pathname: string) => {
     switch (pathname) {
@@ -22,6 +27,17 @@ export default function DashboardLayout() {
       case '/team': return 'Team Management';
       case '/planner-comms': return 'Planner Communications';
       default: return 'MeadowArch';
+    }
+  };
+
+  const handleLogout = async () => {
+    if (auth) {
+      try {
+        await signOut(auth);
+        navigate('/login');
+      } catch (err) {
+        console.error("Error signing out:", err);
+      }
     }
   };
 
@@ -63,7 +79,7 @@ export default function DashboardLayout() {
         </nav>
 
         <div style={{ marginTop: 'auto' }}>
-          <button className="nav-link" style={{ width: '100%', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer' }}>
+          <button onClick={handleLogout} className="nav-link" style={{ width: '100%', border: 'none', background: 'transparent', textAlign: 'left', cursor: 'pointer' }}>
             <LogOut />
             <span>Sign Out</span>
           </button>
@@ -79,9 +95,9 @@ export default function DashboardLayout() {
             <button style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)' }}>
                 <Bell size={20} />
             </button>
-            <div className="avatar">A</div>
+            <div className="avatar">{(currentUser?.email || 'A').charAt(0).toUpperCase()}</div>
             <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <span style={{ fontSize: '0.875rem', fontWeight: 600 }}>Admin User</span>
+                <span style={{ fontSize: '0.875rem', fontWeight: 600 }}>{currentUser?.email || 'Admin User'}</span>
                 <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Manager</span>
             </div>
           </div>
