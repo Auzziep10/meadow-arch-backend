@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { UserPlus, Filter, MapPin } from 'lucide-react';
 import { db } from '../firebase';
 import { collection, onSnapshot, addDoc } from 'firebase/firestore';

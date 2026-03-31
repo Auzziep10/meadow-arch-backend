@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { MessageSquare, Phone, Mail, Calendar, Video, FileCheck } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Phone, Mail, Video, FileCheck } from 'lucide-react';
 import { db } from '../firebase';
-import { collection, onSnapshot, getDocs } from 'firebase/firestore';
+import { collection, onSnapshot } from 'firebase/firestore';
 
 const MOCK_PLANNERS = [
   { id: '1', name: 'Luxe Events Co.', contact: 'Sarah Jenkins', time: '10:45 AM', message: 'Have you received the updated floral arrangement list for the Oct wedding?', active: true },

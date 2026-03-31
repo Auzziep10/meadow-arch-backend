@@ -14,6 +14,6 @@ const firebaseConfig = {
 // Only initialize if config is present to avoid throwing errors during initial dev
 const isFirebaseConfigured = !!firebaseConfig.apiKey;
 
-export const app = isFirebaseConfigured ? initializeApp(firebaseConfig) : null;
-export const db = isFirebaseConfigured ? getFirestore(app) : null;
-export const auth = isFirebaseConfigured ? getAuth(app) : null;
+export const app = isFirebaseConfigured ? initializeApp(firebaseConfig) : ({} as any);
+export const db = isFirebaseConfigured ? getFirestore(app as any) : ({} as any);
+export const auth = isFirebaseConfigured ? getAuth(app as any) : ({} as any);
