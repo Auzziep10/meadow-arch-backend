@@ -3,14 +3,20 @@ import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from 
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '../firebase';
 import { Sparkles, Lock } from 'lucide-react';
-
+import { useNavigate, Navigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-
+  const navigate = useNavigate();
+  const { currentUser } = useAuth();
+  
+  if (currentUser) {
+    return <Navigate to="/" replace />;
+  }
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,7 +28,7 @@ export default function Login() {
     setLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      // Wait for auth state listener to redirect automatically
+      navigate('/');
     } catch (err: any) {
       setError(err.message || "Failed to log in");
       setLoading(false);
@@ -54,7 +60,7 @@ export default function Login() {
           createdAt: serverTimestamp()
         });
       }
-      // Wait for auth state listener to redirect automatically
+      navigate('/');
     } catch (err: any) {
       setError(err.message || "Failed to sign in with Google");
       setLoading(false);
