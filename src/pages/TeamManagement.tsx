@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
-import { UserPlus, Filter, MapPin, CheckCircle, Clock } from 'lucide-react';
-import { db } from '../firebase';
-import { collection, onSnapshot, doc, updateDoc } from 'firebase/firestore';
+import { UserPlus, Filter, MapPin, CheckCircle, Clock, X } from 'lucide-react';
+import { db, firebaseConfig } from '../firebase';
+import { collection, onSnapshot, doc, updateDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { initializeApp } from 'firebase/app';
+import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
 
 const LOCATIONS = [
   'Meadow Arch (Main)',
@@ -13,6 +15,17 @@ const LOCATIONS = [
 export default function TeamManagement() {
   const [selectedLocation, setSelectedLocation] = useState('All');
   const [users, setUsers] = useState<any[]>([]);
+
+  // Modal State
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [creatingUser, setCreatingUser] = useState(false);
+  
+  // Form State
+  const [newName, setNewName] = useState('');
+  const [newEmail, setNewEmail] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [newRole, setNewRole] = useState('Staff');
+  const [newLocation, setNewLocation] = useState(LOCATIONS[0]);
 
   useEffect(() => {
     if (!db) return;
@@ -30,6 +43,50 @@ export default function TeamManagement() {
     } catch (err) {
       console.error(err);
       alert('Failed to approve user.');
+    }
+  };
+
+  const handleCreateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!db || !firebaseConfig.apiKey) {
+      alert("Firebase not configured properly.");
+      return;
+    }
+    
+    try {
+      setCreatingUser(true);
+      
+      // Use a secondary app instance to safely create a user without destroying the current admin session
+      const secondaryApp = initializeApp(firebaseConfig, "SecondaryApp");
+      const secondaryAuth = getAuth(secondaryApp);
+      
+      const userCredential = await createUserWithEmailAndPassword(secondaryAuth, newEmail, newPassword);
+      
+      // Register in Firestore securely
+      await setDoc(doc(db, 'users', userCredential.user.uid), {
+        email: newEmail,
+        name: newName,
+        role: newRole,
+        location: newLocation,
+        status: 'active',
+        createdAt: serverTimestamp()
+      });
+      
+      await secondaryAuth.signOut();
+      
+      setCreatingUser(false);
+      setShowAddModal(false);
+      setNewName('');
+      setNewEmail('');
+      setNewPassword('');
+      setNewRole('Staff');
+      setNewLocation(LOCATIONS[0]);
+      
+      alert('Staff member created successfully and has been activated.');
+    } catch (err: any) {
+      console.error(err);
+      alert('Failed to create account: ' + err.message);
+      setCreatingUser(false);
     }
   };
 
@@ -118,9 +175,12 @@ export default function TeamManagement() {
 
         <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center' }}>
           <UserPlus size={48} color="var(--accent-color)" style={{ marginBottom: '1rem' }} />
-          <h3 style={{ marginBottom: '0.5rem', fontFamily: 'var(--font-sans)' }}>Invite via Link</h3>
-          <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem', fontSize: '0.9rem' }}>Direct them to the portal where they can request access using Google Sign In.</p>
-          <button className="btn btn-outline" onClick={() => { navigator.clipboard.writeText(window.location.origin + '/login'); alert('Invite link copied!'); }}>Copy Invite Link</button>
+          <h3 style={{ marginBottom: '0.5rem', fontFamily: 'var(--font-sans)' }}>Add Team Member</h3>
+          <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem', fontSize: '0.9rem' }}>Provision a new member account with an email and password or share the invite link.</p>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <button className="btn btn-primary" onClick={() => setShowAddModal(true)}>Create Account</button>
+            <button className="btn btn-outline" onClick={() => { navigator.clipboard.writeText(window.location.origin + '/login'); alert('Invite link copied!'); }}>Copy Link</button>
+          </div>
         </div>
       </div>
 
@@ -172,6 +232,63 @@ export default function TeamManagement() {
           </tbody>
         </table>
       </div>
+
+      {/* Add User Modal */}
+      {showAddModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div className="glass-card" style={{ width: '100%', maxWidth: '500px', padding: '2rem', background: 'var(--bg-card)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <h3 style={{ fontFamily: 'var(--font-sans)', fontSize: '1.25rem' }}>Create Account</h3>
+              <button 
+                onClick={() => setShowAddModal(false)}
+                style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+            
+            <form onSubmit={handleCreateUser}>
+              <div className="form-group">
+                <label>Full Name</label>
+                <input type="text" className="form-control" value={newName} onChange={e => setNewName(e.target.value)} required placeholder="Jane Doe" />
+              </div>
+              <div className="form-group">
+                <label>Email Address</label>
+                <input type="email" className="form-control" value={newEmail} onChange={e => setNewEmail(e.target.value)} required placeholder="jane@meadowarch.com" />
+              </div>
+              <div className="form-group">
+                <label>Password</label>
+                <input type="password" className="form-control" value={newPassword} onChange={e => setNewPassword(e.target.value)} required placeholder="Minimum 6 characters" minLength={6} />
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+                <div className="form-group">
+                  <label>Role</label>
+                  <select className="form-control" value={newRole} onChange={e => setNewRole(e.target.value)}>
+                    <option value="Staff">Staff</option>
+                    <option value="Manager">Manager</option>
+                    <option value="Event Coordinator">Event Coordinator</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Location Assignment</label>
+                  <select className="form-control" value={newLocation} onChange={e => setNewLocation(e.target.value)}>
+                    {LOCATIONS.map(loc => (
+                      <option key={loc} value={loc}>{loc}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+                <button type="button" className="btn btn-outline" onClick={() => setShowAddModal(false)} disabled={creatingUser}>Cancel</button>
+                <button type="submit" className="btn btn-primary" disabled={creatingUser}>
+                  {creatingUser ? 'Creating...' : 'Create Member'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
