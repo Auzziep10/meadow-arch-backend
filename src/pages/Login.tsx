@@ -27,7 +27,25 @@ export default function Login() {
     setError('');
     setLoading(true);
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const result = await signInWithEmailAndPassword(auth, email, password);
+      
+      // Bootstrap logic: if an account was manually made in Firebase Auth but has no Firestore profile,
+      // we auto-provision it as an Admin and make it active instantly.
+      if (db) {
+        const userRef = doc(db, 'users', result.user.uid);
+        const userSnap = await getDoc(userRef);
+        if (!userSnap.exists()) {
+          await setDoc(userRef, {
+            email: result.user.email || email,
+            name: result.user.displayName || email.split('@')[0],
+            status: 'active',
+            role: 'Admin',
+            location: 'Meadow Arch (Main)',
+            createdAt: serverTimestamp()
+          });
+        }
+      }
+      
       navigate('/');
     } catch (err: any) {
       setError(err.message || "Failed to log in");

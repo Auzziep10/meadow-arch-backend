@@ -19,6 +19,8 @@ export default function TeamManagement() {
   // Modal State
   const [showAddModal, setShowAddModal] = useState(false);
   const [creatingUser, setCreatingUser] = useState(false);
+  const [editingUser, setEditingUser] = useState<any>(null);
+  const [updatingUser, setUpdatingUser] = useState(false);
   
   // Form State
   const [newName, setNewName] = useState('');
@@ -43,6 +45,25 @@ export default function TeamManagement() {
     } catch (err) {
       console.error(err);
       alert('Failed to approve user.');
+    }
+  };
+
+  const handleUpdateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!db || !editingUser) return;
+    try {
+      setUpdatingUser(true);
+      await updateDoc(doc(db, 'users', editingUser.id), {
+        name: editingUser.name,
+        role: editingUser.role,
+        location: editingUser.location
+      });
+      setUpdatingUser(false);
+      setEditingUser(null);
+    } catch (err: any) {
+      console.error(err);
+      alert('Failed to update user account details.');
+      setUpdatingUser(false);
     }
   };
 
@@ -222,7 +243,7 @@ export default function TeamManagement() {
                 <td><span className="badge" style={{ background: 'rgba(59, 92, 70, 0.1)', color: 'var(--accent-color)' }}>{member.location || 'Unassigned'}</span></td>
                 <td><span className="badge" style={{ background: 'rgba(59, 92, 70, 0.1)', color: 'var(--accent-color)' }}>Active</span></td>
                 <td>
-                  <button className="btn btn-outline" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}>Edit</button>
+                  <button className="btn btn-outline" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }} onClick={() => setEditingUser(member)}>Edit</button>
                 </td>
               </tr>
             ))}
@@ -267,6 +288,7 @@ export default function TeamManagement() {
                     <option value="Staff">Staff</option>
                     <option value="Manager">Manager</option>
                     <option value="Event Coordinator">Event Coordinator</option>
+                    <option value="Admin">Admin</option>
                   </select>
                 </div>
                 <div className="form-group">
@@ -283,6 +305,60 @@ export default function TeamManagement() {
                 <button type="button" className="btn btn-outline" onClick={() => setShowAddModal(false)} disabled={creatingUser}>Cancel</button>
                 <button type="submit" className="btn btn-primary" disabled={creatingUser}>
                   {creatingUser ? 'Creating...' : 'Create Member'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit User Modal */}
+      {editingUser && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div className="glass-card" style={{ width: '100%', maxWidth: '500px', padding: '2rem', background: 'var(--white)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <h3 style={{ fontFamily: 'var(--font-sans)', fontSize: '1.25rem' }}>Edit Account</h3>
+              <button 
+                onClick={() => setEditingUser(null)}
+                style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+            
+            <form onSubmit={handleUpdateUser}>
+              <div className="form-group">
+                <label>Full Name</label>
+                <input type="text" className="form-control" value={editingUser.name || ''} onChange={e => setEditingUser({...editingUser, name: e.target.value})} required />
+              </div>
+              <div className="form-group">
+                <label>Email Address</label>
+                <input type="email" className="form-control" value={editingUser.email} disabled title="Emails must be updated via Firebase Auth Console" style={{ opacity: 0.7, cursor: 'not-allowed' }} />
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+                <div className="form-group">
+                  <label>Role</label>
+                  <select className="form-control" value={editingUser.role} onChange={e => setEditingUser({...editingUser, role: e.target.value})}>
+                    <option value="Staff">Staff</option>
+                    <option value="Manager">Manager</option>
+                    <option value="Event Coordinator">Event Coordinator</option>
+                    <option value="Admin">Admin</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Location Assignment</label>
+                  <select className="form-control" value={editingUser.location} onChange={e => setEditingUser({...editingUser, location: e.target.value})}>
+                    {LOCATIONS.map(loc => (
+                      <option key={loc} value={loc}>{loc}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+                <button type="button" className="btn btn-outline" onClick={() => setEditingUser(null)} disabled={updatingUser}>Cancel</button>
+                <button type="submit" className="btn btn-primary" disabled={updatingUser}>
+                  {updatingUser ? 'Saving...' : 'Save Changes'}
                 </button>
               </div>
             </form>
