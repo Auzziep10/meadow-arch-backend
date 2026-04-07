@@ -1,11 +1,14 @@
 import { useState } from 'react';
-import { Send } from 'lucide-react';
+import { Send, Code, X } from 'lucide-react';
 import { db } from '../firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
 export default function IntakeForms() {
   const [activeTab, setActiveTab] = useState('bride-groom');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showIframeHtml, setShowIframeHtml] = useState(false);
+  
+  const isEmbed = window.location.pathname.includes('/embed');
 
   // Form States
   const [brideForm, setBrideForm] = useState({ name1: '', name2: '', email: '', phone: '', date: '', guests: '', details: '' });
@@ -37,8 +40,17 @@ export default function IntakeForms() {
   };
 
   return (
-    <div className="glass-card" style={{ maxWidth: '800px', margin: '0 auto' }}>
-      <div className="tabs">
+    <>
+      {!isEmbed && (
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem', maxWidth: '800px', margin: '0 auto 1rem auto' }}>
+          <button className="btn btn-outline" onClick={() => setShowIframeHtml(true)} style={{ padding: '0.5rem 1rem', fontSize: '0.875rem' }}>
+            <Code size={16} /> Get Embed Code
+          </button>
+        </div>
+      )}
+      
+      <div className="glass-card" style={{ maxWidth: '800px', margin: '0 auto' }}>
+        <div className="tabs">
         <button 
           className={`tab ${activeTab === 'bride-groom' ? 'active' : ''}`}
           onClick={() => setActiveTab('bride-groom')}
@@ -198,7 +210,34 @@ export default function IntakeForms() {
             </button>
           </form>
         )}
-      </div>
-    </div>
+      </div></div>
+
+      {/* Embed Code Modal */}
+      {showIframeHtml && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div className="glass-card" style={{ width: '100%', maxWidth: '600px', padding: '2rem', background: 'var(--white)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <h3 style={{ fontFamily: 'var(--font-sans)', fontSize: '1.25rem' }}>HTML Embed Snippet</h3>
+              <button 
+                onClick={() => setShowIframeHtml(false)}
+                style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <p style={{ marginBottom: '1rem', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Copy and paste this HTML snippet into any external webpage to embed exactly these forms. The forms will continue to send data directly to this database.</p>
+            <div style={{ background: '#f4f5f1', padding: '1.5rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', fontFamily: 'monospace', fontSize: '0.85rem', whiteSpace: 'pre-wrap', color: 'var(--text-primary)', userSelect: 'all' }}>
+              {`<iframe \n  src="${window.location.origin}/embed/intake-forms" \n  width="100%" \n  height="700" \n  style="border: none;" \n  title="Meadow Arch Intake Forms"\n></iframe>`}
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1.5rem' }}>
+              <button className="btn btn-primary" onClick={() => {
+                navigator.clipboard.writeText(`<iframe src="${window.location.origin}/embed/intake-forms" width="100%" height="700" style="border: none;" title="Meadow Arch Intake Forms"></iframe>`);
+                alert('Copied to clipboard!');
+              }}>Copy to Clipboard</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

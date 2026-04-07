@@ -16,6 +16,11 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<Login />} />
+          <Route path="/embed/intake-forms" element={
+            <div style={{ padding: '2rem', minHeight: '100vh', background: 'transparent' }}>
+              <IntakeForms />
+            </div>
+          } />
           
           <Route path="/" element={
             <ProtectedRoute>
