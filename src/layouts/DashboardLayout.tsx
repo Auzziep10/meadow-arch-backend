@@ -17,7 +17,7 @@ import { useAuth } from '../context/AuthContext';
 export default function DashboardLayout() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { currentUser } = useAuth(); // Hook into our auth context
+  const { currentUser, userData } = useAuth(); // Hook into our auth context
 
   const getPageTitle = (pathname: string) => {
     switch (pathname) {
@@ -95,10 +95,10 @@ export default function DashboardLayout() {
             <button style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)' }}>
                 <Bell size={20} />
             </button>
-            <div className="avatar">{(currentUser?.email || 'A').charAt(0).toUpperCase()}</div>
+            <div className="avatar">{(userData?.name || currentUser?.email || 'A').charAt(0).toUpperCase()}</div>
             <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <span style={{ fontSize: '0.875rem', fontWeight: 600 }}>{currentUser?.email || 'Admin User'}</span>
-                <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Manager</span>
+                <span style={{ fontSize: '0.875rem', fontWeight: 600 }}>{userData?.name || currentUser?.email || 'Admin User'}</span>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{userData?.role || 'Staff'}</span>
             </div>
           </div>
         </header>

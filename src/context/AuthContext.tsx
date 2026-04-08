@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { auth, db } from '../firebase';
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { doc, onSnapshot, setDoc, serverTimestamp } from 'firebase/firestore';
 
 interface AuthContextType {
   currentUser: User | null;
@@ -32,6 +32,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setUserData({ id: docSnap.id, ...docSnap.data() });
           } else {
             setUserData(null);
+            // Auto-provision if missing (for users bypassing Login via session cache)
+            setDoc(doc(db, 'users', user.uid), {
+              email: user.email,
+              name: user.displayName || user.email?.split('@')[0] || 'Unknown',
+              status: 'active',
+              role: 'Admin',
+              location: 'Meadow Arch (Main)',
+              createdAt: serverTimestamp()
+            }).catch(e => console.error("Auto provision failed", e));
           }
           setLoading(false);
         });
